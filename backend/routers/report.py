@@ -1,0 +1,81 @@
+"""
+Report generation and audit log endpoints.
+"""
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
+
+from storage import store, audit_log
+from services.report_generator import generate_json_report, generate_pdf_report
+from models.enums import AuditAction
+
+router = APIRouter(prefix="/api", tags=["report"])
+
+
+@router.get("/report/{tender_id}/json")
+async def get_json_report(tender_id: str):
+    """Generate and download JSON report."""
+    session = store.get_session(tender_id)
+    if not session:
+        raise HTTPException(404, "Tender not found")
+
+    eval_data = store.load_evaluation(tender_id)
+    if not eval_data:
+        raise HTTPException(400, "No evaluation data. Run evaluate_bidders first.")
+
+    criteria = session.get("criteria", [])
+    evaluations = eval_data.get("evaluations", [])
+    audit_entries = audit_log.get_log(tender_id)
+
+    report_bytes = generate_json_report(session, evaluations, criteria, audit_entries)
+    store.save_report(tender_id, report_bytes, "json")
+
+    audit_log.log_action(AuditAction.GENERATE_REPORT.value, tender_id=tender_id,
+                         details="Generated JSON report")
+
+    return Response(
+        content=report_bytes,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=report_{tender_id}.json"}
+    )
+
+
+@router.get("/report/{tender_id}/pdf")
+async def get_pdf_report(tender_id: str):
+    """Generate and download PDF report."""
+    session = store.get_session(tender_id)
+    if not session:
+        raise HTTPException(404, "Tender not found")
+
+    eval_data = store.load_evaluation(tender_id)
+    if not eval_data:
+        raise HTTPException(400, "No evaluation data. Run evaluate_bidders first.")
+
+    criteria = session.get("criteria", [])
+    evaluations = eval_data.get("evaluations", [])
+    audit_entries = audit_log.get_log(tender_id)
+
+    report_bytes = generate_pdf_report(session, evaluations, criteria, audit_entries)
+    store.save_report(tender_id, report_bytes, "pdf")
+
+    audit_log.log_action(AuditAction.GENERATE_REPORT.value, tender_id=tender_id,
+                         details="Generated PDF report")
+
+    return Response(
+        content=report_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=report_{tender_id}.pdf"}
+    )
+
+
+@router.get("/audit_log/{tender_id}")
+async def get_audit_log(tender_id: str):
+    """Get audit log entries for a tender."""
+    entries = audit_log.get_log(tender_id)
+    return {"tender_id": tender_id, "entries": entries}
+
+
+@router.get("/audit_log")
+async def get_full_audit_log():
+    """Get all audit log entries."""
+    entries = audit_log.get_log()
+    return {"entries": entries}
