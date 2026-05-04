@@ -1,6 +1,7 @@
 /**
  * API client for the Tender Evaluation Platform backend.
- * Includes Clerk auth token injection.
+ * Local username/password auth — no token needed; the admin's
+ * session lives entirely in the browser.
  */
 import axios from 'axios';
 
@@ -9,31 +10,8 @@ const api = axios.create({
   timeout: 120000, // 2 min for OCR processing
 });
 
-// ── Auth Token Management ───────────────────────────────────────
-let _getToken = null;
-
-/**
- * Register the Clerk getToken function so API calls include auth headers.
- */
-export function setAuthTokenGetter(fn) {
-  _getToken = fn;
-}
-
-// Axios interceptor: attach Bearer token to every request
-api.interceptors.request.use(async (config) => {
-  if (_getToken) {
-    try {
-      const token = await _getToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (e) {
-      // If token fetch fails, proceed without auth
-      console.warn('Failed to get auth token:', e);
-    }
-  }
-  return config;
-});
+// Kept for backward compatibility; no-op now that auth is local.
+export function setAuthTokenGetter(_fn) { /* noop */ }
 
 // ── Tender Endpoints ────────────────────────────────────────────
 

@@ -5,29 +5,23 @@
  *  - NewTenderModal (upload + auto-extract)
  *  - AuditLog (slide-in panel)
  */
-import { useState, useEffect } from 'react';
-import { useAuth, useUser } from '@clerk/clerk-react';
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import '../App.css';
 import Layout from '../components/Layout';
 import AdminOverview from '../components/AdminOverview';
 import TenderDetail from '../components/TenderDetail';
 import NewTenderModal from '../components/NewTenderModal';
 import AuditLog from '../components/AuditLog';
-import { setAuthTokenGetter } from '../utils/api';
 
 export default function EvaluatorDashboard({ theme, toggleTheme }) {
-  const { getToken } = useAuth();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const [view, setView] = useState('overview'); // overview | tender | audit
   const [activeTender, setActiveTender] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    setAuthTokenGetter(getToken);
-  }, [getToken]);
 
   const openTender = (t) => {
     setActiveTender(t);

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import RiskRadar from './RiskRadar';
+import EligibilityFunnel from './EligibilityFunnel';
 
 function useCountUp(value, duration = 700) {
   const [display, setDisplay] = useState(0);
@@ -165,6 +167,23 @@ export default function TenderInsights({ tender, criteria = [], bidders = [], ev
           ))}
         </div>
       </section>
+
+      {/* Per-criterion drill-down funnel — complements the high-level pipeline above */}
+      {evaluations.length > 0 && criteria.length > 0 && (
+        <section className="glass-card" style={{ padding: 18 }}>
+          <EligibilityFunnel evaluations={evaluations} criteria={criteria} />
+        </section>
+      )}
+
+      {/* AI Risk Radar — anomaly detection across all submitted bidders */}
+      {bidders.length > 0 && (
+        <section className="glass-card" style={{ padding: 18 }}>
+          <RiskRadar
+            bidders={Object.fromEntries((bidders || []).map((b) => [b.bidder_id, b]))}
+            criteria={criteria}
+          />
+        </section>
+      )}
 
       <style>{`
         .ti-root { display: flex; flex-direction: column; gap: 16px; }

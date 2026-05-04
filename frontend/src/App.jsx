@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ClerkProvider } from '@clerk/clerk-react';
-import { dark } from '@clerk/themes';
 
+import { AuthProvider } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import EvaluatorDashboard from './pages/EvaluatorDashboard';
 import BidderPortal from './pages/BidderPortal';
 import AdminGuard from './components/AdminGuard';
 import './App.css';
-
-const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-if (!CLERK_KEY) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
-}
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
@@ -27,33 +20,8 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Clerk theme configuration based on app theme
-  const clerkAppearance = {
-    baseTheme: theme === 'dark' ? dark : undefined,
-    variables: {
-      colorPrimary: '#00E5A0',
-      fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-      borderRadius: '12px',
-    },
-    elements: {
-      card: {
-        backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 12px 48px rgba(0, 0, 0, 0.5)',
-        borderRadius: '16px',
-      },
-      formButtonPrimary: {
-        background: 'linear-gradient(135deg, #00E5A0 0%, #3D8BFD 100%)',
-        border: 'none',
-        textTransform: 'none',
-        fontWeight: 600,
-      },
-      footerActionLink: { color: '#00E5A0' },
-    },
-  };
-
   return (
-    <ClerkProvider publishableKey={CLERK_KEY} appearance={clerkAppearance}>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public landing */}
@@ -65,7 +33,7 @@ export default function App() {
           {/* Single, fixed-admin login page */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Admin Dashboard — protected by AdminGuard (fixed email only) */}
+          {/* Admin Dashboard — protected by AdminGuard (fixed creds only) */}
           <Route
             path="/admin/*"
             element={
@@ -82,6 +50,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-    </ClerkProvider>
+    </AuthProvider>
   );
 }

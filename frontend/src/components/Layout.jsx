@@ -2,9 +2,9 @@
  * Layout — Admin Dashboard shell.
  * Section-based sidebar nav + topbar.  No stepper.
  */
-import { Link } from 'react-router-dom';
-import { UserButton } from '@clerk/clerk-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { tenderDisplayTitle } from '../utils/helpers';
+import { useAuth } from '../contexts/AuthContext';
 
 const NAV = [
   { id: 'overview', label: 'Dashboard', icon: '📊' },
@@ -22,6 +22,12 @@ export default function Layout({
   theme,
   toggleTheme,
 }) {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const handleSignOut = () => {
+    signOut();
+    navigate('/');
+  };
   return (
     <div className="app-layout">
       {/* ─── Sidebar ─────────────────────────────────────────────── */}
@@ -38,18 +44,25 @@ export default function Layout({
 
         {/* User chip */}
         <div className="sidebar-user">
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{ elements: { avatarBox: { width: 36, height: 36 } } }}
-          />
+          <div className="sidebar-user-avatar" title={user?.username}>
+            {(user?.username?.[0] || 'A').toUpperCase()}
+          </div>
           <div className="sidebar-user-info">
             <span className="sidebar-user-name">
-              {user?.fullName || user?.firstName || 'Evaluator'}
+              {user?.fullName || user?.username || 'Admin'}
             </span>
             <span className="sidebar-user-email">
-              {user?.primaryEmailAddress?.emailAddress || ''}
+              @{user?.username || 'admin'}
             </span>
           </div>
+          <button
+            className="sidebar-signout"
+            onClick={handleSignOut}
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            ⏻
+          </button>
         </div>
 
         {/* Primary action */}
@@ -113,6 +126,37 @@ export default function Layout({
 
       <style>{`
         .no-underline { text-decoration: none; color: inherit; }
+
+        .sidebar-user {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-user-avatar {
+          width: 38px; height: 38px;
+          border-radius: 50%;
+          background: var(--gradient-accent);
+          color: var(--bg-primary);
+          font-weight: 800;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1rem;
+          flex-shrink: 0;
+        }
+        .sidebar-signout {
+          margin-left: auto;
+          width: 32px; height: 32px;
+          background: transparent;
+          border: 1px solid var(--bg-glass-border);
+          border-radius: 8px;
+          color: var(--text-muted);
+          cursor: pointer;
+          font-size: 0.95rem;
+          transition: all 150ms;
+          flex-shrink: 0;
+        }
+        .sidebar-signout:hover {
+          color: var(--status-fail);
+          border-color: rgba(255, 77, 106, 0.3);
+          background: rgba(255, 77, 106, 0.06);
+        }
 
         .admin-tag {
           font-size: 0.62rem;

@@ -5,7 +5,7 @@
  *  - "Admin Login"    → fixed admin login page (only one account allowed)
  */
 import { Link } from 'react-router-dom';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const features = [
   { icon: '📄', title: 'Auto-extract criteria', text: 'Parse NIT/tender PDFs and lift mandatory + optional eligibility rules.' },
@@ -23,6 +23,7 @@ const flow = [
 ];
 
 export default function LandingPage() {
+  const { isSignedIn, signOut } = useAuth();
   return (
     <div className="landing-container">
       <div className="landing-bg"></div>
@@ -39,14 +40,20 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-md">
           <Link to="/bidder" className="nav-link">Bidder Portal</Link>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-          <SignedOut>
+          {isSignedIn ? (
+            <>
+              <Link to="/admin" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
+                Open Admin →
+              </Link>
+              <button className="nav-link" onClick={signOut} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                Sign out
+              </button>
+            </>
+          ) : (
             <Link to="/login" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none' }}>
               🔒 Admin Login
             </Link>
-          </SignedOut>
+          )}
         </div>
       </header>
 
