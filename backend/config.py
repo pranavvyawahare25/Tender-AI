@@ -32,7 +32,12 @@ CORS_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
+    "https://tender-ai.vercel.app",
 ]
+
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    CORS_ORIGINS.append(frontend_url)
 
 # Indian number system conversion
 CRORE = 10_000_000
