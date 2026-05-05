@@ -51,7 +51,10 @@ async def extract_criteria(tender_id: str):
     ocr_result = ocr_service.process_document(filepath)
 
     # Extract criteria
-    criteria = tender_extractor.extract_criteria(ocr_result.full_text)
+    criteria = tender_extractor.extract_criteria(
+        ocr_result.full_text,
+        ocr_payload=ocr_result.to_llm_payload(),
+    )
 
     # Save results
     store.save_extraction(tender_id, "tender_ocr", ocr_result.to_dict())

@@ -4,12 +4,13 @@ Produces JSON and PDF reports.
 """
 import io
 import json
+from html import escape
 from datetime import datetime
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch, mm
+from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 
 
@@ -43,6 +44,7 @@ def generate_pdf_report(tender_info, evaluations, criteria, audit_entries=None):
     heading_style = ParagraphStyle('CustomHeading', parent=styles['Heading2'], fontSize=14,
                                     textColor=colors.HexColor('#283593'), spaceBefore=16, spaceAfter=8)
     normal_style = styles['Normal']
+    small_style = ParagraphStyle('Small', parent=normal_style, fontSize=7, leading=9)
 
     elements = []
 
@@ -70,12 +72,19 @@ def generate_pdf_report(tender_info, evaluations, criteria, audit_entries=None):
 
     # Criteria
     elements.append(Paragraph("Eligibility Criteria", heading_style))
-    crit_header = ["#", "Criterion", "Required Value", "Type"]
+    crit_header = ["#", "Criterion", "Required Value", "Type", "Source"]
     crit_data = [crit_header]
     for i, c in enumerate(criteria, 1):
-        crit_data.append([str(i), c.get("criterion", ""), c.get("value", ""), c.get("type", "")])
+        source = c.get("extraction_source") or c.get("source") or "regex"
+        crit_data.append([
+            str(i),
+            Paragraph(escape(str(c.get("criterion", ""))), small_style),
+            Paragraph(escape(str(c.get("value", ""))), small_style),
+            c.get("type", ""),
+            source,
+        ])
 
-    t = Table(crit_data, colWidths=[30, 200, 140, 100])
+    t = Table(crit_data, colWidths=[25, 170, 120, 80, 75])
     t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a237e')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -105,18 +114,24 @@ def generate_pdf_report(tender_info, evaluations, criteria, audit_entries=None):
 
         results = eval_data.get("results", [])
         if results:
-            res_header = ["Criterion", "Bidder Value", "Decision", "Reason"]
+            res_header = ["Criterion", "Bidder Value", "Decision", "Source", "Reason"]
             res_data = [res_header]
             for r in results:
                 decision = r.get("decision", "")
+                source_parts = [r.get("extraction_source") or "regex"]
+                if r.get("match_strategy"):
+                    source_parts.append(r.get("match_strategy"))
+                if r.get("match_score") is not None:
+                    source_parts.append(f"{r.get('match_score'):.2f}")
                 res_data.append([
-                    r.get("criterion", "")[:40],
-                    r.get("bidder_value", ""),
+                    Paragraph(escape(str(r.get("criterion", ""))), small_style),
+                    Paragraph(escape(str(r.get("bidder_value", ""))), small_style),
                     decision,
-                    r.get("reason", "")[:60],
+                    Paragraph(escape(" / ".join(source_parts)), small_style),
+                    Paragraph(escape(str(r.get("reason", ""))), small_style),
                 ])
 
-            t = Table(res_data, colWidths=[140, 90, 80, 160])
+            t = Table(res_data, colWidths=[125, 75, 60, 75, 135])
             t.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#37474f')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -128,6 +143,34 @@ def generate_pdf_report(tender_info, evaluations, criteria, audit_entries=None):
                 ('TOPPADDING', (0, 0), (-1, -1), 5),
             ]))
             elements.append(t)
+
+            evidence_rows = []
+            for r in results:
+                evidence = r.get("llm_reasoning") or r.get("field_raw_text") or ""
+                if not evidence:
+                    continue
+                label = f"{r.get('matched_field') or r.get('criterion', '')}"
+                evidence_rows.append([
+                    Paragraph(escape(str(label)), small_style),
+                    Paragraph(escape(str(evidence)), small_style),
+                ])
+            if evidence_rows:
+                elements.append(Spacer(1, 6))
+                elements.append(Paragraph("Extraction Evidence", ParagraphStyle(
+                    'EvidenceHeading', parent=normal_style, fontSize=9, spaceBefore=4, spaceAfter=4,
+                    textColor=colors.HexColor('#37474f')
+                )))
+                evidence_table = Table([["Field", "Evidence / LLM Reasoning"]] + evidence_rows,
+                                       colWidths=[120, 350])
+                evidence_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#eceff1')),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 7),
+                    ('GRID', (0, 0), (-1, -1), 0.25, colors.lightgrey),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ]))
+                elements.append(evidence_table)
 
         elements.append(Spacer(1, 8))
 

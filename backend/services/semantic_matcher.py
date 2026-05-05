@@ -15,15 +15,15 @@ This rescues:
 Falls through to None on any failure so the matching engine can keep using
 its deterministic CRITERION_TO_FIELDS dictionary.
 """
-import os
 import logging
 from typing import Optional, Iterable
+from config import USE_SEMANTIC_MATCHER, SEMANTIC_MODEL, SEMANTIC_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
-USE_SEMANTIC = os.getenv("USE_SEMANTIC_MATCHER", "1").strip() != "0"
-MODEL_NAME   = os.getenv("SEMANTIC_MODEL", "sentence-transformers/all-MiniLM-L6-v2").strip()
-THRESHOLD    = float(os.getenv("SEMANTIC_THRESHOLD", "0.45"))
+USE_SEMANTIC = USE_SEMANTIC_MATCHER
+MODEL_NAME   = SEMANTIC_MODEL.strip()
+THRESHOLD    = SEMANTIC_THRESHOLD
 
 _model = None
 _field_cache: dict[str, "any"] = {}        # field-label  → embedding tensor

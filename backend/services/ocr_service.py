@@ -52,11 +52,30 @@ class OCRResult:
         self.pages = pages
         self.avg_confidence = avg_confidence
 
+    def to_llm_payload(self):
+        """Return a stable, page-aware input shape for LLM extractors."""
+        page_blocks = []
+        for page in self.pages:
+            text = (page.text or "").strip()
+            if text:
+                page_blocks.append(f"[Page {page.page_num} | {page.method} | OCR {page.confidence:.2f}]\n{text}")
+
+        return {
+            "filename": self.filename,
+            "full_text": self.full_text,
+            "llm_text": "\n\n".join(page_blocks) or self.full_text,
+            "pages": [p.to_dict() for p in self.pages],
+            "page_count": len(self.pages),
+            "avg_confidence": self.avg_confidence,
+        }
+
     def to_dict(self):
         return {
             "filename": self.filename,
             "full_text": self.full_text,
+            "llm_text": self.to_llm_payload()["llm_text"],
             "pages": [p.to_dict() for p in self.pages],
+            "page_count": len(self.pages),
             "avg_confidence": self.avg_confidence,
         }
 

@@ -13,16 +13,16 @@ Failure semantics:
   - If the API call fails or JSON is malformed, returns None.
 The caller falls back to the deterministic regex extractor when None is returned.
 """
-import os
 import json
 import logging
 from typing import Optional
+from config import GROQ_API_KEY, GROQ_MODEL, USE_LLM_EXTRACTOR, LLM_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
-USE_LLM      = os.getenv("USE_LLM_EXTRACTOR", "1").strip() != "0"
+GROQ_API_KEY = (GROQ_API_KEY or "").strip()
+GROQ_MODEL   = (GROQ_MODEL or "llama-3.3-70b-versatile").strip()
+USE_LLM      = USE_LLM_EXTRACTOR
 
 _client = None
 
@@ -36,7 +36,7 @@ def _get_client():
         return None
     try:
         from groq import Groq
-        _client = Groq(api_key=GROQ_API_KEY)
+        _client = Groq(api_key=GROQ_API_KEY, timeout=LLM_TIMEOUT)
         return _client
     except Exception as e:
         logger.warning(f"Groq client init failed — LLM disabled: {e}")
@@ -79,7 +79,8 @@ matching this schema, with no commentary:
       "value":      "<the threshold value verbatim, e.g. ₹5 crore or ISO 9001:2015>",
       "type":       "financial" | "technical" | "compliance",
       "mandatory":  true | false,
-      "raw_text":   "<the exact sentence from the tender that establishes this criterion>"
+      "raw_text":   "<the exact sentence from the tender that establishes this criterion>",
+      "llm_reasoning": "<brief reason this sentence establishes the criterion>"
     }
   ]
 }
@@ -94,8 +95,16 @@ Rules:
 """
 
 
-def extract_criteria_llm(text: str) -> Optional[list[dict]]:
+def _coerce_ocr_text(document_input) -> str:
+    """Accept raw text or OCRResult/to_dict payloads and return LLM-ready text."""
+    if isinstance(document_input, dict):
+        return str(document_input.get("llm_text") or document_input.get("full_text") or "")
+    return str(document_input or "")
+
+
+def extract_criteria_llm(text: str | dict) -> Optional[list[dict]]:
     """Returns a list of criterion dicts (regex-compatible) or None on failure."""
+    text = _coerce_ocr_text(text)
     if not USE_LLM or not GROQ_API_KEY:
         return None
     if not text or not text.strip():
@@ -127,7 +136,9 @@ def extract_criteria_llm(text: str) -> Optional[list[dict]]:
                 "type":       (c.get("type") or "compliance").lower(),
                 "mandatory":  bool(c.get("mandatory", True)),
                 "raw_text":   str(c.get("raw_text", "")).strip(),
+                "llm_reasoning": str(c.get("llm_reasoning", "")).strip(),
                 "source":     "llm",
+                "extraction_source": "llm",
             })
         return cleaned if cleaned else None
     except json.JSONDecodeError as e:
@@ -147,6 +158,7 @@ this exact schema, with no commentary:
       "field":       "<canonical key — see list below>",
       "value":       "<the value, verbatim where possible>",
       "raw_text":    "<the exact sentence or table cell from the document>",
+      "llm_reasoning": "<brief reason this value is the correct field>",
       "confidence":  0.0 to 1.0
     }
   ]
@@ -169,10 +181,14 @@ Rules:
 """
 
 
-def extract_bidder_data_llm(text: str,
+def extract_bidder_data_llm(text: str | dict,
                             filename: str = "",
                             page_count: int = 1) -> Optional[list[dict]]:
     """Returns a list of bidder field dicts compatible with the matching engine, or None."""
+    if isinstance(text, dict):
+        filename = filename or str(text.get("filename") or "")
+        page_count = int(text.get("page_count") or page_count or 1)
+    text = _coerce_ocr_text(text)
     if not USE_LLM or not GROQ_API_KEY:
         return None
     if not text or not text.strip():
@@ -204,10 +220,12 @@ def extract_bidder_data_llm(text: str,
                 "field":      str(f.get("field", "")).strip(),
                 "value":      str(f.get("value", "")).strip(),
                 "raw_text":   str(f.get("raw_text", "")).strip(),
+                "llm_reasoning": str(f.get("llm_reasoning", "")).strip(),
                 "confidence": conf,
                 "source_doc": filename,
                 "page":       1,            # page-level localisation not yet returned
                 "source":     "llm",
+                "extraction_source": "llm",
             })
         return cleaned if cleaned else None
     except json.JSONDecodeError as e:

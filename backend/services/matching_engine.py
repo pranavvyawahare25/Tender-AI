@@ -123,14 +123,28 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
                 "confidence": 0.0,
                 "overridden": False,
                 "override_reason": "",
+                "extraction_source": "not_found",
+                "match_strategy": "missing",
             })
             continue
 
         bidder_value = bidder_item.get("value", "")
         extraction_conf = bidder_item.get("confidence", 0.5)
-        combined_conf = score_extraction(ocr_confidence, extraction_conf)
+        # Use the field's recorded source (llm/regex) and the match strategy
+        # to weight the combined confidence appropriately.
+        field_source = bidder_item.get("source", "regex")
+        scoring_source = "semantic" if match_strategy == "semantic" else field_source
+        combined_conf = score_extraction(
+            ocr_confidence,
+            extraction_conf,
+            source=scoring_source,
+            match_score=match_score,
+        )
         source_doc = bidder_item.get("source_doc", "")
         page = bidder_item.get("page", 0)
+        extraction_source = bidder_item.get("extraction_source", field_source)
+        field_raw_text = bidder_item.get("raw_text") or bidder_item.get("raw_match", "")
+        llm_reasoning = bidder_item.get("llm_reasoning", "")
 
         # Low confidence → automatic NEED_REVIEW
         if needs_review(combined_conf):
@@ -146,6 +160,12 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
                 "confidence": combined_conf,
                 "overridden": False,
                 "override_reason": "",
+                "extraction_source": extraction_source,
+                "match_strategy": match_strategy or "canonical",
+                "match_score": round(match_score, 3) if match_score is not None else None,
+                "matched_field": bidder_item.get("field"),
+                "field_raw_text": field_raw_text,
+                "llm_reasoning": llm_reasoning,
             })
             continue
 
@@ -170,6 +190,9 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
             "match_strategy": match_strategy or "canonical",
             "match_score": round(match_score, 3) if match_score is not None else None,
             "matched_field": bidder_item.get("field"),
+            "extraction_source": extraction_source,
+            "field_raw_text": field_raw_text,
+            "llm_reasoning": llm_reasoning,
         })
         # If matched semantically, surface that in the reason for transparency
         if match_strategy == "semantic" and match_score is not None:

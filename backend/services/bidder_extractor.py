@@ -94,7 +94,7 @@ COMPLIANCE_CHECKS = [
 ]
 
 
-def extract_bidder_data(text, filename="", pages=None):
+def extract_bidder_data(text, filename="", pages=None, ocr_payload=None):
     """
     Extract relevant data from bidder document text.
 
@@ -105,7 +105,7 @@ def extract_bidder_data(text, filename="", pages=None):
     """
     pages = pages or []
     llm_fields = llm_extractor.extract_bidder_data_llm(
-        text, filename=filename, page_count=len(pages)
+        ocr_payload or text, filename=filename, page_count=len(pages)
     ) or []
 
     regex_fields = _extract_bidder_data_regex(text, filename=filename, pages=pages)
@@ -165,6 +165,9 @@ def _extract_bidder_data_regex(text, filename="", pages=None):
                     "page": page_num,
                     "confidence": conf,
                     "raw_match": match.group(0)[:100],
+                    "raw_text": match.group(0)[:100],
+                    "source": "regex",
+                    "extraction_source": "regex",
                 })
                 break  # Use first matching pattern
 
@@ -182,6 +185,9 @@ def _extract_bidder_data_regex(text, filename="", pages=None):
                     "page": page_num,
                     "confidence": 0.88,
                     "raw_match": match.group(0)[:100],
+                    "raw_text": match.group(0)[:100],
+                    "source": "regex",
+                    "extraction_source": "regex",
                 })
                 break
 

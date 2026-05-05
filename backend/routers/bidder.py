@@ -75,7 +75,8 @@ async def extract_bidder_data(tender_id: str, bidder_id: str):
         ocr_result = ocr_service.process_document(filepath)
         extracted = bidder_extractor.extract_bidder_data(
             ocr_result.full_text, filename,
-            [p.to_dict() for p in ocr_result.pages]
+            [p.to_dict() for p in ocr_result.pages],
+            ocr_payload=ocr_result.to_llm_payload(),
         )
         all_extracted.extend(extracted)
 

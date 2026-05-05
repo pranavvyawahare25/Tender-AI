@@ -23,6 +23,22 @@ OCR_CONFIDENCE_THRESHOLD = 0.75  # Below this → flag for manual review
 TESSERACT_CONFIG = "--oem 3 --psm 6"  # LSTM engine, uniform block
 PDF_DPI = 300  # Resolution for PDF-to-image conversion
 
+# LLM extraction configuration
+USE_LLM_EXTRACTOR = os.getenv("USE_LLM_EXTRACTOR", "1").strip() != "0"
+LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq")
+LLM_MODEL = os.getenv("LLM_MODEL") or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "30"))
+
+# Backward-compatible Groq names used by older code and .env files.
+GROQ_API_KEY = LLM_API_KEY
+GROQ_MODEL = LLM_MODEL
+
+# Semantic matching configuration
+USE_SEMANTIC_MATCHER = os.getenv("USE_SEMANTIC_MATCHER", "1").strip() != "0"
+SEMANTIC_MODEL = os.getenv("SEMANTIC_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+SEMANTIC_THRESHOLD = float(os.getenv("SEMANTIC_THRESHOLD", "0.45"))
+
 # Supported file types
 SUPPORTED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".docx"}
 

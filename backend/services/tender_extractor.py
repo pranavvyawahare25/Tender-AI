@@ -68,7 +68,7 @@ COMPLIANCE_KEYWORDS = [
 ]
 
 
-def extract_criteria(text):
+def extract_criteria(text, ocr_payload=None):
     """
     Extract eligibility criteria from tender document text.
 
@@ -77,7 +77,7 @@ def extract_criteria(text):
       2. Regex fallback / merge — guarantees recall for known patterns.
     """
     # ── 1. Try the LLM ──────────────────────────────────────────────
-    llm_criteria = llm_extractor.extract_criteria_llm(text)
+    llm_criteria = llm_extractor.extract_criteria_llm(ocr_payload or text)
     if llm_criteria and len(llm_criteria) >= 2:
         logger.info(f"LLM extractor returned {len(llm_criteria)} criteria")
         # Merge: add any regex-found criterion the LLM missed (recall safety net)
@@ -86,6 +86,7 @@ def extract_criteria(text):
         for rc in regex_criteria:
             if rc["criterion"].lower() not in seen_names:
                 rc["source"] = "regex-fallback"
+                rc["extraction_source"] = "regex-fallback"
                 llm_criteria.append(rc)
                 seen_names.add(rc["criterion"].lower())
         return llm_criteria
@@ -114,6 +115,7 @@ def _extract_criteria_regex(text):
             criteria.append({
                 "criterion": key, "value": formatted, "type": pat["type"].value,
                 "mandatory": True, "raw_text": full_match.strip(), "parsed_amount": amount,
+                "source": "regex", "extraction_source": "regex",
             })
 
     # Technical
@@ -126,6 +128,7 @@ def _extract_criteria_regex(text):
             criteria.append({
                 "criterion": key, "value": match.group(1), "type": pat["type"].value,
                 "mandatory": True, "raw_text": match.group(0).strip(),
+                "source": "regex", "extraction_source": "regex",
             })
 
     # Compliance
@@ -143,6 +146,7 @@ def _extract_criteria_regex(text):
             criteria.append({
                 "criterion": comp["criterion"], "value": value, "type": comp["type"].value,
                 "mandatory": True, "raw_text": search_text[start:end].strip(),
+                "source": "regex", "extraction_source": "regex",
             })
 
     return criteria

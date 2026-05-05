@@ -16,6 +16,16 @@ class Criterion(BaseModel):
     type: CriterionType = Field(..., description="Category: financial/technical/compliance")
     mandatory: bool = Field(True, description="Whether this criterion is mandatory")
     raw_text: str = Field("", description="Original text snippet from the document")
+    source: Optional[str] = Field(
+        None, description="Which extractor produced this criterion: 'llm' | 'regex' | 'regex-fallback'",
+    )
+    extraction_source: Optional[str] = Field(
+        None, description="Normalized extraction source used by reports and audit output",
+    )
+    llm_reasoning: str = Field("", description="Brief LLM rationale when source is 'llm'")
+    parsed_amount: Optional[float] = Field(
+        None, description="Parsed numeric amount for financial criteria (in ₹)",
+    )
 
 
 # ── Bidder Data ──────────────────────────────────────────────────
@@ -27,6 +37,11 @@ class BidderDataField(BaseModel):
     source_doc: str = Field("", description="Source document filename")
     page: int = Field(0, description="Page number where value was found")
     confidence: float = Field(0.0, ge=0.0, le=1.0, description="Extraction confidence")
+    source: str = Field("regex", description="Extractor source: regex or llm")
+    extraction_source: str = Field("regex", description="Normalized extractor source")
+    raw_text: str = Field("", description="Raw supporting text")
+    raw_match: str = Field("", description="Regex match snippet, when applicable")
+    llm_reasoning: str = Field("", description="Brief LLM rationale when source is 'llm'")
 
 
 class BidderProfile(BaseModel):
@@ -53,6 +68,12 @@ class EvalResult(BaseModel):
     confidence: float = Field(0.0, ge=0.0, le=1.0)
     overridden: bool = Field(False, description="Whether manually overridden")
     override_reason: str = Field("", description="Reason for override")
+    extraction_source: str = Field("", description="Source of the matched bidder field")
+    match_strategy: str = Field("", description="canonical, semantic, missing")
+    match_score: Optional[float] = Field(None, ge=0.0, le=1.0)
+    matched_field: Optional[str] = Field(None, description="Bidder field matched to the criterion")
+    field_raw_text: str = Field("", description="Raw text supporting the matched field")
+    llm_reasoning: str = Field("", description="LLM rationale for the matched field, if present")
 
 
 class BidderEvaluation(BaseModel):
