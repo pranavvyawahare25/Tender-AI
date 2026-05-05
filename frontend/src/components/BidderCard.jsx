@@ -68,6 +68,15 @@ export default function BidderCard({ evaluation, onOverride }) {
                     {r.decision}
                   </span>
                   {r.overridden && <span className="overridden-badge">OVERRIDDEN</span>}
+                  {r.match_strategy === 'semantic' && (
+                    <span
+                      className="overridden-badge"
+                      style={{ background: 'rgba(61, 139, 253, 0.15)', color: '#3D8BFD' }}
+                      title={`Field matched by sentence-embedding similarity (${Math.round((r.match_score || 0) * 100)}%)`}
+                    >
+                      🧬 SEMANTIC {r.match_score ? Math.round(r.match_score * 100) + '%' : ''}
+                    </span>
+                  )}
                 </td>
                 <td>
                   <div className="flex flex-col gap-sm" style={{ minWidth: 80 }}>

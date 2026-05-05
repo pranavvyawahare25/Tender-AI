@@ -1,11 +1,24 @@
 """
 Matching Engine for evaluating bidders against tender criteria.
-Compares extracted bidder data with tender requirements using
-rule-based logic with explainable decisions.
+
+Two-stage matching:
+  1. Hardcoded CRITERION_TO_FIELDS dict — fast, deterministic, used for
+     known canonical criterion names.
+  2. Sentence-embedding semantic matcher — used as a fallback when the
+     dict misses, e.g. for LLM-extracted criteria with novel names or
+     bidder fields with non-canonical keys ("yearly_revenue" → turnover).
+
+The verdict (PASS / FAIL / NEED_REVIEW) is then computed by deterministic
+type-aware comparators (financial / technical / compliance) so every
+decision remains fully explainable.
 """
 import re
+import logging
 from models.enums import Decision, CriterionType
 from services.confidence_scorer import score_extraction, needs_review
+from services import semantic_matcher
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_amount(value_str):
@@ -68,13 +81,33 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
         crit_value = criterion.get("value", "")
         crit_type = criterion.get("type", "compliance")
 
-        # Find matching bidder data
+        # ── 1. Hardcoded canonical map (fast, deterministic) ─────────
         matching_fields = CRITERION_TO_FIELDS.get(crit_name, [])
         bidder_item = None
+        match_strategy = None
+        match_score = None
         for field in matching_fields:
             if field in bidder_lookup:
                 bidder_item = bidder_lookup[field]
+                match_strategy = "canonical"
                 break
+
+        # ── 2. Semantic-similarity fallback ──────────────────────────
+        # Rescues LLM-extracted fields with novel keys, or criterion names
+        # the hardcoded dict has never seen.
+        if bidder_item is None:
+            sm = semantic_matcher.best_match(
+                criterion_name=crit_name,
+                criterion_value=crit_value,
+                bidder_fields=list(bidder_lookup.values()),
+            )
+            if sm is not None:
+                bidder_item, match_score = sm
+                match_strategy = "semantic"
+                logger.info(
+                    f"Semantic match · '{crit_name}' → '{bidder_item.get('field')}' "
+                    f"(score={match_score:.3f})"
+                )
 
         if bidder_item is None:
             # No matching data found → NEED_REVIEW
@@ -134,7 +167,16 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
             "confidence": combined_conf,
             "overridden": False,
             "override_reason": "",
+            "match_strategy": match_strategy or "canonical",
+            "match_score": round(match_score, 3) if match_score is not None else None,
+            "matched_field": bidder_item.get("field"),
         })
+        # If matched semantically, surface that in the reason for transparency
+        if match_strategy == "semantic" and match_score is not None:
+            result["reason"] = (
+                f"{result.get('reason', '')} · Field matched semantically "
+                f"('{bidder_item.get('field')}', similarity {match_score:.2f})."
+            ).strip(" ·")
         results.append(result)
 
     return results

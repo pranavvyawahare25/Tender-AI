@@ -50,4 +50,10 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    from services.llm_extractor import llm_status
+    from services.semantic_matcher import status as semantic_status
+    return {
+        "status": "healthy",
+        "llm": llm_status(),
+        "semantic_matcher": semantic_status(),
+    }

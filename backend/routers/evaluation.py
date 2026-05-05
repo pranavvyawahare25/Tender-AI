@@ -81,15 +81,29 @@ async def evaluate_bidders(tender_id: str, user: Optional[ClerkUser] = Depends(g
     store.save_evaluation(tender_id, eval_data)
     store.update_session(tender_id, {"evaluations": evaluations, "status": "evaluated"})
 
+    # Tally match strategies for the audit-log narrative
+    canon_n, sem_n = 0, 0
+    for ev in evaluations:
+        for r in ev.get("results", []):
+            ms = r.get("match_strategy")
+            if ms == "canonical":
+                canon_n += 1
+            elif ms == "semantic":
+                sem_n += 1
+    strategy_note = f" · {canon_n} canonical · {sem_n} semantic match{'es' if sem_n != 1 else ''}"
+
     user_info = f" by {user.email or user.user_id}" if user else ""
-    audit_log.log_action(AuditAction.EVALUATE.value, tender_id=tender_id,
-                         details=f"Evaluated {len(evaluations)} bidders{user_info}")
+    audit_log.log_action(
+        AuditAction.EVALUATE.value, tender_id=tender_id,
+        details=f"Evaluated {len(evaluations)} bidders{strategy_note}{user_info}",
+    )
 
     return {
         "tender_id": tender_id,
         "bidders_evaluated": len(evaluations),
         "evaluations": evaluations,
         "summary": summary,
+        "match_strategies": {"canonical": canon_n, "semantic": sem_n},
     }
 
 

@@ -1,8 +1,16 @@
 """
-Bidder Document Data Extractor.
-Extracts relevant data from bidder submission documents.
+Bidder Document Data Extractor — hybrid LLM + regex.
+
+Strategy mirrors tender_extractor.py:
+  1. LLM (Groq · Llama-3 70B) attempts structured field extraction.
+  2. Regex pipeline runs unconditionally and merges any fields the LLM missed.
+  3. When both find the same field, the higher-confidence one wins.
 """
 import re
+import logging
+from services import llm_extractor
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_indian_amount(text):
@@ -87,7 +95,40 @@ COMPLIANCE_CHECKS = [
 
 
 def extract_bidder_data(text, filename="", pages=None):
-    """Extract relevant data from bidder document text."""
+    """
+    Extract relevant data from bidder document text.
+
+    Hybrid pipeline:
+      1. LLM (Groq Llama-3 70B) extracts structured fields.
+      2. Regex extractor runs unconditionally as a recall safety net.
+      3. Per-field merge: highest confidence wins.
+    """
+    pages = pages or []
+    llm_fields = llm_extractor.extract_bidder_data_llm(
+        text, filename=filename, page_count=len(pages)
+    ) or []
+
+    regex_fields = _extract_bidder_data_regex(text, filename=filename, pages=pages)
+
+    # Merge by field name — keep the one with higher confidence
+    by_field = {}
+    for item in llm_fields + regex_fields:
+        f = item.get("field", "").strip().lower()
+        if not f:
+            continue
+        if f not in by_field or item.get("confidence", 0) > by_field[f].get("confidence", 0):
+            by_field[f] = item
+
+    merged = list(by_field.values())
+    if llm_fields:
+        logger.info(
+            f"Bidder extraction · LLM={len(llm_fields)} regex={len(regex_fields)} merged={len(merged)}"
+        )
+    return merged
+
+
+def _extract_bidder_data_regex(text, filename="", pages=None):
+    """The original deterministic regex bidder extractor — kept as a safety net."""
     extracted = []
     pages = pages or []
 

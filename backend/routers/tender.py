@@ -58,10 +58,25 @@ async def extract_criteria(tender_id: str):
     store.save_extraction(tender_id, "criteria", {"criteria": criteria})
     store.update_session(tender_id, {"criteria": criteria, "status": "criteria_extracted"})
 
-    audit_log.log_action(AuditAction.EXTRACT_CRITERIA.value, tender_id=tender_id,
-                         details=f"Extracted {len(criteria)} criteria")
+    # Tag the source for the audit log: LLM, regex, or hybrid
+    sources = {c.get("source", "regex") for c in criteria}
+    if "llm" in sources and len(sources) > 1:
+        src_label = "LLM + regex"
+    elif "llm" in sources:
+        src_label = "LLM (Groq · Llama-3)"
+    else:
+        src_label = "regex"
 
-    return {"id": tender_id, "status": "completed", "items_extracted": len(criteria), "data": criteria}
+    audit_log.log_action(
+        AuditAction.EXTRACT_CRITERIA.value, tender_id=tender_id,
+        details=f"Extracted {len(criteria)} criteria via {src_label}",
+    )
+
+    return {
+        "id": tender_id, "status": "completed",
+        "items_extracted": len(criteria), "data": criteria,
+        "extractor": src_label,
+    }
 
 
 @router.get("/tender/{tender_id}")
