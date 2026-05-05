@@ -2,7 +2,13 @@
  * BidderCard — Expandable evaluation card for a single bidder.
  */
 import { useState } from 'react';
-import { getDecisionClass, getConfidenceClass, formatConfidence } from '../utils/helpers';
+import {
+  getDecisionClass,
+  getConfidenceClass,
+  formatConfidence,
+  getSourceClass,
+  getSourceLabel,
+} from '../utils/helpers';
 
 export default function BidderCard({ evaluation, onOverride }) {
   const [expanded, setExpanded] = useState(true);
@@ -59,9 +65,25 @@ export default function BidderCard({ evaluation, onOverride }) {
                   <div className="font-medium">{r.criterion}</div>
                   <div className="eval-reason">{r.reason}</div>
                   {r.document && <div className="eval-source">📄 {r.document} {r.page ? `(p.${r.page})` : ''}</div>}
+                  {(r.field_raw_text || r.llm_reasoning) && (
+                    <details className="evidence-details">
+                      <summary>Evidence</summary>
+                      <div>{r.llm_reasoning || r.field_raw_text}</div>
+                    </details>
+                  )}
                 </td>
                 <td>
                   <span className="font-semibold">{r.bidder_value || '—'}</span>
+                  <div className="source-row compact">
+                    <span className={`source-pill ${getSourceClass(r.extraction_source)}`}>
+                      {getSourceLabel(r.extraction_source)}
+                    </span>
+                    {r.matched_field && (
+                      <span className="source-pill source-regex">
+                        {r.matched_field}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <span className={`badge ${getDecisionClass(r.decision)}`}>

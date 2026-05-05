@@ -23,14 +23,6 @@ TenderAI is shaped around Indian government procurement review patterns:
 
 This is a decision-support tool. Final procurement decisions should remain with authorized officials.
 
-## Screenshots
-
-Existing QA screenshots are included at the repo root:
-
-![TenderAI landing page](qa_01.jpg)
-![Evaluator dashboard](qa_07.jpg)
-![Bidder and evaluation workflow](qa_08.jpg)
-
 ## Architecture
 
 ```text
@@ -138,6 +130,8 @@ npm run dev
 Frontend: http://localhost:5173
 
 ## Demo Workflow
+
+For a concise judge-facing walkthrough, see `JUDGE_DEMO_GUIDE.md`.
 
 1. Log in to the admin dashboard with `admin` / `crpf@2025`.
 2. Upload `backend/sample_data/generated/sample_tender_crpf.pdf`.

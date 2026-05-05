@@ -30,6 +30,25 @@ export function formatConfidence(confidence) {
   return `${(confidence * 100).toFixed(0)}%`;
 }
 
+export function getSourceLabel(source) {
+  switch ((source || '').toLowerCase()) {
+    case 'llm': return 'AI extracted';
+    case 'regex-fallback': return 'Rule fallback';
+    case 'regex': return 'Rule extracted';
+    case 'not_found': return 'Missing evidence';
+    default: return source || 'Rule extracted';
+  }
+}
+
+export function getSourceClass(source) {
+  switch ((source || '').toLowerCase()) {
+    case 'llm': return 'source-llm';
+    case 'regex-fallback': return 'source-fallback';
+    case 'not_found': return 'source-missing';
+    default: return 'source-regex';
+  }
+}
+
 export function getTypeIcon(type) {
   switch (type) {
     case 'financial': return '💰';

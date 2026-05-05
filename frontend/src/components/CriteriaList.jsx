@@ -1,7 +1,7 @@
 /**
  * CriteriaList — Display extracted eligibility criteria.
  */
-import { getTypeIcon, getTypeLabel } from '../utils/helpers';
+import { getSourceClass, getSourceLabel, getTypeIcon, getTypeLabel } from '../utils/helpers';
 
 export default function CriteriaList({ criteria }) {
   if (!criteria || criteria.length === 0) return null;
@@ -16,6 +16,7 @@ export default function CriteriaList({ criteria }) {
       <div className="criteria-grid stagger">
         {criteria.map((c, i) => {
           const typeClass = `type-${c.type}`;
+          const source = c.extraction_source || c.source || 'regex';
           return (
             <div key={i} className="glass-card criterion-card">
               <div className="criterion-header">
@@ -28,8 +29,16 @@ export default function CriteriaList({ criteria }) {
                   </span>
                 )}
               </div>
+              <div className="source-row">
+                <span className={`source-pill ${getSourceClass(source)}`}>
+                  {getSourceLabel(source)}
+                </span>
+              </div>
               <div className="criterion-name">{c.criterion}</div>
               <div className="criterion-value">{c.value}</div>
+              {c.llm_reasoning && (
+                <div className="criterion-evidence">{c.llm_reasoning}</div>
+              )}
               {c.raw_text && (
                 <div className="criterion-raw">"{c.raw_text}"</div>
               )}
