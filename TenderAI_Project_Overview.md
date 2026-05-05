@@ -162,25 +162,5 @@ Round 2 priorities, ordered by impact-per-week. All compatible with the current 
 
 ---
 
-## 🎬 Demo Script for the Jury (5 minutes)
-
-| Time | Action |
-|---|---|
-| 0:00 | Open the public landing page. Two clearly-separated cards — Bidder Portal (public) and Admin Dashboard (restricted). |
-| 0:20 | Click *Admin Login*. Auto-fill the demo credentials shown on screen. Sign in. |
-| 0:40 | Land on the dashboard. KPIs animate up. Impact strip shows the time-saved figure. |
-| 1:10 | Hover a tender card — realistic CRPF tender names, status pill, criteria count, pass-rate bar. |
-| 1:30 | Open the IT tender. War-room view, big LIVE pill polling every 8 s. |
-| 1:50 | In a second window, open `/bidder`. Pick the same tender. Upload TechVision's PDFs. Submit. |
-| 2:15 | Switch back to admin. LIVE pill flashes; the new bidder appears in the live feed. |
-| 2:30 | Click ⚡ *Run AI Evaluation*. Verdicts arrive in seconds — eligible, not eligible, needs review. |
-| 3:00 | Open the **Bidders** tab. Walk through the criterion-by-criterion explanations: criterion + bidder value + source doc + page + confidence + reason. Highlight a `🧬 SEMANTIC` badge. |
-| 3:30 | Open the **Insights** tab. Pipeline funnel, eligibility drill-down per criterion, AI Risk Radar with anomaly flags. |
-| 4:00 | Open the **Matrix** tab — pivot view procurement officers actually use. |
-| 4:20 | Override one decision inline. Reason captured to audit log. |
-| 4:40 | Download the PDF report. Sign-off ready. |
-| 5:00 | Slide out the audit log. Every action — automated or human — recorded with extractor source (LLM vs regex), match strategy (canonical vs semantic), and timestamp. |
-
----
 
 *Last updated: rebuilt with hybrid LLM + semantic + rules architecture, live operations dashboard, AI Risk Radar, comparison matrix, eligibility funnel, animated impact metrics, inline rename, and Vercel + Render production deployment.*
