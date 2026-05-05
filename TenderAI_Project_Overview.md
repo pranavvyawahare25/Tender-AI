@@ -162,5 +162,3 @@ Round 2 priorities, ordered by impact-per-week. All compatible with the current 
 
 ---
 
-
-*Last updated: rebuilt with hybrid LLM + semantic + rules architecture, live operations dashboard, AI Risk Radar, comparison matrix, eligibility funnel, animated impact metrics, inline rename, and Vercel + Render production deployment.*
