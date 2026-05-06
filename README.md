@@ -9,9 +9,12 @@ AI-powered platform for government tender evaluation and bidder eligibility anal
 - **Semantic Matching**: Match LLM-extracted or differently worded fields with sentence embeddings before falling back to manual review.
 - **Source-Aware Confidence**: Score regex, LLM, and semantic matches with different weighting so review routing is calibrated by extraction source.
 - **Explainable Decisions**: Every PASS / FAIL / NEED_REVIEW includes criterion, bidder value, document, page, confidence, match strategy, source, and reasoning/evidence.
-- **Manual Override**: Admin reviewers can override decisions with an audit trail.
+- **Reasoned Orders**: Automated generation of legally-sound, CVC-compliant reasoned orders for vendor rejections, ensuring administrative fairness.
+- **Tamper Detection**: Cryptographic hashing and heuristic analysis to flag potentially modified or forged bidder documents.
+- **Cryptographic Audit Packs**: Generates verifiable ZIP archives containing the exact tender state, uploaded documents, and evaluation JSONs for 100% post-tender auditability.
+- **Evaluation Framework**: Built-in ground-truth testing suite to continuously measure LLM extraction and semantic matching accuracy.
+- **Manual Override**: Admin reviewers can override decisions with an immutable audit trail.
 - **Report Generation**: Download JSON and PDF reports that include extraction source, semantic-match metadata, and LLM reasoning/evidence.
-- **Audit Log**: Track upload, extraction, evaluation, override, and report actions.
 
 ## Government Procurement Context
 
@@ -43,10 +46,16 @@ FastAPI Backend
       Canonical field mapping
       semantic_matcher.py embedding fallback
       source-aware confidence_scorer.py
+  - Trust & Compliance Layer
+      tamper_detector.py (fraud/forgery detection)
+      reasoned_order.py (legal rejection generation)
+      audit_pack.py (cryptographic archiving)
   - Reports
       JSON/PDF with extraction source, evidence, LLM reasoning, audit trail
   - Storage
       Local JSON sessions, extractions, evaluations, reports
+  - Evaluation Suite (/eval)
+      run_eval.py testing against ground_truth.json
 ```
 
 ## Prerequisites
