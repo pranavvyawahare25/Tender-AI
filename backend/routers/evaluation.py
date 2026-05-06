@@ -55,11 +55,16 @@ async def evaluate_bidders(tender_id: str, user: Optional[ClerkUser] = Depends(g
             summary["needs_review"].append(bidder_name)
             continue
 
-        results = evaluate_bidder(criteria, bidder_data, bidder_name)
+        tamper_summary = bidder_info.get("tamper")
+        results = evaluate_bidder(
+            criteria, bidder_data, bidder_name,
+            tamper_summary=tamper_summary,
+        )
         overall, pass_c, fail_c, review_c = compute_overall_decision(results)
 
         eval_entry = {
             "bidder_id": bidder_id,
+            "tamper": tamper_summary,
             "bidder_name": bidder_name,
             "results": results,
             "overall_decision": overall,

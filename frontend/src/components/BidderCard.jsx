@@ -16,7 +16,8 @@ export default function BidderCard({ evaluation, onOverride }) {
   const [overrideDecision, setOverrideDecision] = useState('PASS');
   const [overrideReason, setOverrideReason] = useState('');
 
-  const { bidder_id, bidder_name, results, overall_decision, pass_count, fail_count, review_count } = evaluation;
+  const { bidder_id, bidder_name, results, overall_decision, pass_count, fail_count, review_count, tamper } = evaluation;
+  const tamperSev = tamper?.max_severity;
 
   const handleOverride = (criterion) => {
     if (!overrideReason.trim()) return;
@@ -40,6 +41,27 @@ export default function BidderCard({ evaluation, onOverride }) {
           </div>
         </div>
         <div className="flex items-center gap-md">
+          {tamperSev && (
+            <span
+              className="badge"
+              title={tamper?.summary || 'Document integrity flag'}
+              style={{
+                background: tamperSev === 'high'   ? 'rgba(255,77,106,0.15)'
+                          : tamperSev === 'medium' ? 'rgba(255,183,77,0.15)'
+                          :                          'rgba(61,139,253,0.12)',
+                color:      tamperSev === 'high'   ? 'var(--status-fail)'
+                          : tamperSev === 'medium' ? 'var(--status-review)'
+                          :                          'var(--accent-secondary)',
+                border:    `1px solid ${
+                  tamperSev === 'high'   ? 'rgba(255,77,106,0.4)'
+                  : tamperSev === 'medium' ? 'rgba(255,183,77,0.4)'
+                  :                          'rgba(61,139,253,0.3)'
+                }`,
+              }}
+            >
+              🚨 TAMPER {tamperSev.toUpperCase()}
+            </span>
+          )}
           <span className={`badge ${getDecisionClass(overall_decision)}`}>
             {overall_decision === 'PASS' ? '✅ ELIGIBLE' : overall_decision === 'FAIL' ? '❌ NOT ELIGIBLE' : '⚠️ NEEDS REVIEW'}
           </span>

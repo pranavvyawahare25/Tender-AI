@@ -16,13 +16,17 @@ The caller falls back to the deterministic regex extractor when None is returned
 import json
 import logging
 from typing import Optional
-from config import GROQ_API_KEY, GROQ_MODEL, USE_LLM_EXTRACTOR, LLM_TIMEOUT
+from config import (
+    GROQ_API_KEY, GROQ_MODEL, USE_LLM_EXTRACTOR, LLM_TIMEOUT,
+    LLM_PROVIDER, OLLAMA_HOST, OLLAMA_MODEL,
+)
 
 logger = logging.getLogger(__name__)
 
 GROQ_API_KEY = (GROQ_API_KEY or "").strip()
 GROQ_MODEL   = (GROQ_MODEL or "llama-3.3-70b-versatile").strip()
 USE_LLM      = USE_LLM_EXTRACTOR
+PROVIDER     = (LLM_PROVIDER or "groq").lower()  # "groq" | "ollama" | "auto"
 
 _client = None
 
@@ -65,6 +69,53 @@ def _call_groq(system: str, user: str, max_tokens: int = 2048) -> Optional[str]:
         return None
 
 
+def _call_ollama(system: str, user: str, max_tokens: int = 2048) -> Optional[str]:
+    """
+    Call a self-hosted Ollama instance — keeps tender data inside your
+    container / Indian infrastructure. Same JSON contract as Groq.
+    Activate via LLM_PROVIDER=ollama in .env.
+    """
+    if not USE_LLM:
+        return None
+    try:
+        import httpx
+        url = f"{OLLAMA_HOST}/api/chat"
+        payload = {
+            "model": OLLAMA_MODEL,
+            "stream": False,
+            "format": "json",
+            "options": {"temperature": 0.1, "num_predict": max_tokens},
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": user},
+            ],
+        }
+        with httpx.Client(timeout=LLM_TIMEOUT) as cli:
+            r = cli.post(url, json=payload)
+            r.raise_for_status()
+            data = r.json()
+        return (data.get("message") or {}).get("content")
+    except Exception as e:
+        logger.warning(f"Ollama call failed ({OLLAMA_HOST}) — falling back: {e}")
+        return None
+
+
+def _call_llm(system: str, user: str, max_tokens: int = 2048) -> Optional[str]:
+    """
+    Provider-aware dispatch. Default is groq.
+    `auto` tries ollama first (sovereign) then groq.
+    """
+    if PROVIDER == "ollama":
+        return _call_ollama(system, user, max_tokens)
+    if PROVIDER == "auto":
+        out = _call_ollama(system, user, max_tokens)
+        if out is not None:
+            return out
+        return _call_groq(system, user, max_tokens)
+    # default
+    return _call_groq(system, user, max_tokens)
+
+
 # ─── Tender criteria extraction ────────────────────────────────────────
 CRITERIA_SYSTEM = """You are a senior CRPF procurement analyst.
 Read the tender / NIT document and extract every eligibility criterion the
@@ -102,10 +153,21 @@ def _coerce_ocr_text(document_input) -> str:
     return str(document_input or "")
 
 
+def _llm_available() -> bool:
+    """LLM is callable if either Groq key (cloud) or Ollama (sovereign) is wired up."""
+    if not USE_LLM:
+        return False
+    if PROVIDER == "ollama":
+        return True   # we attempt Ollama; it'll log + return None on failure
+    if PROVIDER == "auto":
+        return True
+    return bool(GROQ_API_KEY)
+
+
 def extract_criteria_llm(text: str | dict) -> Optional[list[dict]]:
     """Returns a list of criterion dicts (regex-compatible) or None on failure."""
     text = _coerce_ocr_text(text)
-    if not USE_LLM or not GROQ_API_KEY:
+    if not _llm_available():
         return None
     if not text or not text.strip():
         return None
@@ -113,7 +175,7 @@ def extract_criteria_llm(text: str | dict) -> Optional[list[dict]]:
     # Trim absurdly long tenders to fit context. 70B Llama has a 128k window
     # but we only need the eligibility section in practice.
     truncated = text[:60_000]
-    raw = _call_groq(
+    raw = _call_llm(
         system=CRITERIA_SYSTEM,
         user=f"TENDER DOCUMENT:\n\n{truncated}",
         max_tokens=3000,
@@ -189,13 +251,13 @@ def extract_bidder_data_llm(text: str | dict,
         filename = filename or str(text.get("filename") or "")
         page_count = int(text.get("page_count") or page_count or 1)
     text = _coerce_ocr_text(text)
-    if not USE_LLM or not GROQ_API_KEY:
+    if not _llm_available():
         return None
     if not text or not text.strip():
         return None
 
     truncated = text[:60_000]
-    raw = _call_groq(
+    raw = _call_llm(
         system=BIDDER_SYSTEM,
         user=f"BIDDER DOCUMENT ({filename}):\n\n{truncated}",
         max_tokens=2500,
@@ -235,9 +297,13 @@ def extract_bidder_data_llm(text: str | dict,
 
 def llm_status() -> dict:
     """Diagnostic helper — useful for the /health endpoint and audit log."""
+    sovereign = PROVIDER in ("ollama",)   # data stays inside your container
     return {
-        "enabled":   USE_LLM,
-        "key_set":   bool(GROQ_API_KEY),
-        "model":     GROQ_MODEL,
-        "available": _get_client() is not None,
+        "enabled":     USE_LLM,
+        "provider":    PROVIDER,
+        "model":       OLLAMA_MODEL if PROVIDER == "ollama" else GROQ_MODEL,
+        "ollama_host": OLLAMA_HOST if PROVIDER in ("ollama", "auto") else None,
+        "key_set":     bool(GROQ_API_KEY),
+        "sovereign":   sovereign,
+        "available":   _llm_available(),
     }

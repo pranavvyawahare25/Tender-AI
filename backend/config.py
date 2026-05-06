@@ -24,11 +24,18 @@ TESSERACT_CONFIG = "--oem 3 --psm 6"  # LSTM engine, uniform block
 PDF_DPI = 300  # Resolution for PDF-to-image conversion
 
 # LLM extraction configuration
+# Provider can be "groq" (default, US-hosted Llama-3 — fast prototype mode)
+# or "ollama" (self-hosted, India-sovereign — production / govt mode).
+# Set LLM_PROVIDER=ollama and OLLAMA_HOST=http://your-host:11434 to switch.
 USE_LLM_EXTRACTOR = os.getenv("USE_LLM_EXTRACTOR", "1").strip() != "0"
 LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY", "")
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 LLM_MODEL = os.getenv("LLM_MODEL") or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "30"))
+
+# Self-hosted Ollama (data sovereignty — never leaves your container)
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3:8b")
 
 # Backward-compatible Groq names used by older code and .env files.
 GROQ_API_KEY = LLM_API_KEY

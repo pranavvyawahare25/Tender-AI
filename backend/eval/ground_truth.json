@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Hand-labelled ground-truth set for TenderAI's criterion extractor. Numbers reported with this set are honest baseline numbers — not synthetic.",
+    "tenders": 4,
+    "criteria_total": 23
+  },
+  "tenders": [
+    {
+      "id": "CRPF/IT/2025-26/001",
+      "filename": "CRPF_IT_2025-26_001_Network_Infrastructure.pdf",
+      "criteria": [
+        { "criterion": "Minimum Annual Turnover",   "type": "financial",  "value_contains": ["5", "crore"],          "mandatory": true },
+        { "criterion": "Similar Projects",          "type": "technical",  "value_contains": ["3"],                   "mandatory": true },
+        { "criterion": "GST Registration",          "type": "compliance", "value_contains": ["gst"],                 "mandatory": true },
+        { "criterion": "PAN Card",                  "type": "compliance", "value_contains": ["pan"],                 "mandatory": true },
+        { "criterion": "ISO Certification",         "type": "compliance", "value_contains": ["9001"],                "mandatory": true },
+        { "criterion": "EPFO Registration",         "type": "compliance", "value_contains": ["epfo"],                "mandatory": true }
+      ]
+    },
+    {
+      "id": "CRPF/MT/2025-26/004",
+      "filename": "CRPF_MT_2025-26_004_Bullet_Proof_Vehicles.pdf",
+      "criteria": [
+        { "criterion": "Minimum Annual Turnover",   "type": "financial",  "value_contains": ["100", "crore"],        "mandatory": true },
+        { "criterion": "OEM Authorization",         "type": "technical",  "value_contains": ["oem"],                 "mandatory": true },
+        { "criterion": "Similar Supply Experience", "type": "technical",  "value_contains": ["50"],                  "mandatory": true },
+        { "criterion": "BIS / NIJ Test Certification","type":"compliance","value_contains": ["b6", "nij"],           "mandatory": true },
+        { "criterion": "GST Registration",          "type": "compliance", "value_contains": ["gst"],                 "mandatory": true },
+        { "criterion": "Net Worth",                 "type": "financial",  "value_contains": ["positive"],            "mandatory": true },
+        { "criterion": "Service Network",           "type": "technical",  "value_contains": ["5"],                   "mandatory": true }
+      ]
+    },
+    {
+      "id": "CRPF/COMM/2025-26/012",
+      "filename": "CRPF_COMM_2025-26_012_Tactical_Comms.pdf",
+      "criteria": [
+        { "criterion": "Minimum Annual Turnover",   "type": "financial",  "value_contains": ["25", "crore"],         "mandatory": true },
+        { "criterion": "Make-in-India Compliance",  "type": "compliance", "value_contains": ["class", "ppp"],        "mandatory": true },
+        { "criterion": "Encryption Certification",  "type": "compliance", "value_contains": ["stqc", "aes"],         "mandatory": true },
+        { "criterion": "Past Supplies to CAPF",     "type": "technical",  "value_contains": ["2"],                   "mandatory": true },
+        { "criterion": "GST Registration",          "type": "compliance", "value_contains": ["gst"],                 "mandatory": true },
+        { "criterion": "ISO 9001 Certification",    "type": "compliance", "value_contains": ["9001"],                "mandatory": true }
+      ]
+    },
+    {
+      "id": "CRPF/CIV/2025-26/003",
+      "filename": "CRPF_CIV_2025-26_003_Barracks_Hyderabad.pdf",
+      "criteria": [
+        { "criterion": "Minimum Annual Turnover",   "type": "financial",  "value_contains": ["30", "crore"],         "mandatory": true },
+        { "criterion": "Similar Construction Experience","type":"technical","value_contains": ["2"],                "mandatory": true },
+        { "criterion": "CPWD/PWD Empanelment",      "type": "compliance", "value_contains": ["cpwd", "pwd"],         "mandatory": true },
+        { "criterion": "GST Registration",          "type": "compliance", "value_contains": ["gst"],                 "mandatory": true }
+      ]
+    }
+  ]
+}

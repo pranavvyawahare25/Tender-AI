@@ -6,6 +6,8 @@ from fastapi.responses import Response
 
 from storage import store, audit_log
 from services.report_generator import generate_json_report, generate_pdf_report
+from services.reasoned_order import generate_reasoned_order
+from services.audit_pack import build_audit_pack
 from models.enums import AuditAction
 
 router = APIRouter(prefix="/api", tags=["report"])
@@ -64,6 +66,71 @@ async def get_pdf_report(tender_id: str):
         content=report_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=report_{tender_id}.pdf"}
+    )
+
+
+@router.get("/reasoned_order/{tender_id}/{bidder_id}")
+async def get_reasoned_order(tender_id: str, bidder_id: str):
+    """
+    CVC-compliant reasoned-order PDF for a single bidder.
+    Cites GFR Rule 173 + CVC Procurement Manual + Section 4 RTI.
+    """
+    session = store.get_session(tender_id)
+    if not session:
+        raise HTTPException(404, "Tender not found")
+
+    eval_data = store.load_evaluation(tender_id)
+    if not eval_data:
+        raise HTTPException(400, "No evaluation data. Run evaluate_bidders first.")
+
+    evaluation = next(
+        (e for e in eval_data.get("evaluations", []) if e.get("bidder_id") == bidder_id),
+        None,
+    )
+    if not evaluation:
+        raise HTTPException(404, "Bidder not found in evaluation results")
+
+    criteria = session.get("criteria", [])
+    bidder_name = evaluation.get("bidder_name", bidder_id)
+    pdf_bytes = generate_reasoned_order(
+        tender_info={"tender_id": tender_id, **session},
+        bidder_name=bidder_name,
+        evaluation=evaluation,
+        criteria=criteria,
+    )
+
+    audit_log.log_action(
+        AuditAction.GENERATE_REPORT.value, tender_id=tender_id, bidder_id=bidder_id,
+        details=f"Generated reasoned order for {bidder_name}",
+    )
+    safe_name = bidder_name.replace(" ", "_").replace("/", "-")[:60]
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=reasoned_order_{safe_name}.pdf"},
+    )
+
+
+@router.get("/audit_pack/{tender_id}")
+async def get_audit_pack(tender_id: str):
+    """
+    CAG-grade audit pack — one ZIP with every artefact a procurement
+    auditor would request, plus a SHA-256 hash-chain manifest so any
+    post-hoc tampering with the pack itself can be detected.
+    """
+    try:
+        zip_bytes = build_audit_pack(tender_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+    audit_log.log_action(
+        AuditAction.GENERATE_REPORT.value, tender_id=tender_id,
+        details="Generated CAG audit pack (hash-chain manifest)",
+    )
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=audit_pack_{tender_id}.zip"},
     )
 
 

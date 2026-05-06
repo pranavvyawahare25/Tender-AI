@@ -63,7 +63,8 @@ CRITERION_TO_FIELDS = {
 }
 
 
-def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
+def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95,
+                    tamper_summary=None):
     """
     Evaluate a single bidder against all criteria.
     Returns list of EvalResult dicts.
@@ -201,6 +202,22 @@ def evaluate_bidder(criteria, bidder_data, bidder_name="", ocr_confidence=0.95):
                 f"('{bidder_item.get('field')}', similarity {match_score:.2f})."
             ).strip(" ·")
         results.append(result)
+
+    # ── Tamper override ──────────────────────────────────────────
+    # If the bidder's documents tripped a HIGH-severity integrity flag,
+    # force every PASS down to NEED_REVIEW. The decision and reason carry
+    # the tamper context for the audit log.
+    if tamper_summary and tamper_summary.get("max_severity") == "high":
+        flagged_kinds = sorted({(f.get("kind") or "") for f in tamper_summary.get("flags", [])})
+        for r in results:
+            if r["decision"] == Decision.PASS.value:
+                r["decision"] = Decision.NEED_REVIEW.value
+                r["reason"] = (
+                    f"{r.get('reason', '')} · ⚠️ Document integrity flag "
+                    f"({', '.join(flagged_kinds) or 'forgery suspected'}) — "
+                    "manual verification required before clearance."
+                ).strip(" ·")
+                r["tamper_override"] = True
 
     return results
 
