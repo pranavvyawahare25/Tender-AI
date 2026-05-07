@@ -117,7 +117,13 @@ def _call_llm(system: str, user: str, max_tokens: int = 2048) -> Optional[str]:
 
 
 # ─── Tender criteria extraction ────────────────────────────────────────
-CRITERIA_SYSTEM = """You are a senior CRPF procurement analyst.
+CRITERIA_SYSTEM = """You are a senior Indian government procurement analyst.
+The tender may come from CRPF, any CAPF, a state government (e.g. Karnataka
+under the KTPP Act 1999), or any other Indian public-procurement body. The
+document may be written in English, Hindi (Devanagari), Kannada, or any
+mix — translate to English internally and return the canonical English
+criterion name in the output.
+
 Read the tender / NIT document and extract every eligibility criterion the
 bidder must satisfy. Distinguish technical, financial, and compliance
 criteria. Mark each as mandatory or optional. Always return STRICT JSON

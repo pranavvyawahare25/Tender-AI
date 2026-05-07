@@ -147,6 +147,52 @@ TENDERS = [
         "emd":        "Rs. 30 lakh",
         "experience": "8 years",
     },
+    # ─── Karnataka state tender (KTPP Act 1999) ─────────────────────────
+    {
+        "filename":  "KSP_IT_2025-26_007_State_Police_Network.pdf",
+        "tender_no": "KSP/IT/2025-26/007",
+        "issuer":    "Karnataka State Police, Government of Karnataka",
+        "issuer_addr": "DGP & IGP Office, Nrupathunga Road, Bengaluru — 560001",
+        "title":     "Supply &amp; Commissioning of Network Infrastructure for Karnataka State Police Stations",
+        "subject":   ("Supply, installation and commissioning of secure network "
+                      "infrastructure (routers, switches, fibre, UPS) at 250 "
+                      "police stations across Karnataka, under the Karnataka "
+                      "State Police IT Modernisation Plan."),
+        "framework_lines": [
+            "This tender is issued under the <b>Karnataka Transparency in Public "
+            "Procurement Act, 1999 (KTPP Act)</b> and its 2000 Rules. The "
+            "e-procurement workflow is hosted on <b>eproc.karnataka.gov.in</b> in "
+            "compliance with GoK Order DPAR 2/2007.",
+            "All bid evaluation will be carried out in line with KTPP Section 4 "
+            "(eligibility, pre-qualification, transparency) and CVC's Manual for "
+            "Procurement of Goods 2022.",
+        ],
+        "criteria": [
+            ("Minimum Annual Turnover",
+             "Average annual turnover of Rs. 10 crore in each of the last 3 financial years",
+             "CA Certificate / Audited Balance Sheet"),
+            ("Karnataka GST Registration",
+             "Must have valid GST registration in Karnataka (29 series)",
+             "GST Registration Certificate (Karnataka)"),
+            ("e-Procurement Empanelment",
+             "Must be registered on eproc.karnataka.gov.in with active vendor ID",
+             "e-Procurement vendor registration screenshot"),
+            ("Similar Projects",
+             "Must have completed at least 2 similar projects of network rollout for State / Central Government in last 5 years",
+             "Completion Certificates"),
+            ("MSME Preference (Karnataka)",
+             "Karnataka-based MSMEs get a 5% price preference under State MSME policy",
+             "Udyam Registration + Karnataka domicile certificate"),
+            ("ISO 27001 Certification",
+             "Must be ISO 27001:2022 certified for information-security management",
+             "Copy of ISO 27001 certificate"),
+            ("EMD",
+             "EMD of Rs. 8 lakh as DD or BG in favour of DGP, Karnataka State Police",
+             "DD / Bank Guarantee"),
+        ],
+        "emd":        "Rs. 8 lakh",
+        "experience": "5 years",
+    },
 ]
 
 
@@ -171,11 +217,13 @@ def _create_doc(filename, content_fn):
 
 
 def generate_tender(spec):
-    """Generate a CRPF tender document from a spec dict."""
+    """Generate a tender document from a spec dict (CRPF or state)."""
     def content(title, heading, normal, small):
         els = []
-        els.append(Paragraph("CENTRAL RESERVE POLICE FORCE (CRPF)", title))
-        els.append(Paragraph("Directorate General — CGO Complex, New Delhi", normal))
+        issuer = spec.get("issuer", "CENTRAL RESERVE POLICE FORCE (CRPF)")
+        addr   = spec.get("issuer_addr", "Directorate General — CGO Complex, New Delhi")
+        els.append(Paragraph(issuer, title))
+        els.append(Paragraph(addr, normal))
         els.append(Spacer(1, 6))
         els.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1a237e')))
         els.append(Spacer(1, 10))
@@ -187,7 +235,11 @@ def generate_tender(spec):
             f"Subject: {spec['title']}", normal))
         els.append(Spacer(1, 8))
         els.append(Paragraph(spec["subject"], normal))
-        els.append(Spacer(1, 12))
+        els.append(Spacer(1, 8))
+        for line in spec.get("framework_lines", []) or []:
+            els.append(Paragraph(line, normal))
+            els.append(Spacer(1, 4))
+        els.append(Spacer(1, 8))
 
         els.append(Paragraph("ELIGIBILITY CRITERIA / PRE-QUALIFICATION REQUIREMENTS", heading))
         els.append(Paragraph(
@@ -407,12 +459,95 @@ def generate_bidder_3():
     return _create_doc("bidder_securenet_systems.pdf", content)
 
 
+def generate_hindi_tender_docx():
+    """
+    Hindi-language tender (.docx) — exercises the python-docx ingest path
+    and the multilingual LLM extractor. Unicode text is stored as-is in
+    the DOCX; rendering happens on the viewer's machine where Devanagari
+    fonts are present.
+    """
+    try:
+        from docx import Document
+        from docx.shared import Pt, RGBColor
+    except ImportError:
+        print("  python-docx not installed — skipping Hindi DOCX")
+        return None
+
+    out = os.path.join(OUTPUT_DIR, "MHA_HI_2025-26_002_Riot_Gear_Hindi.docx")
+    doc = Document()
+
+    title = doc.add_heading("केंद्रीय रिज़र्व पुलिस बल (CRPF)", level=0)
+    doc.add_paragraph("गृह मंत्रालय, भारत सरकार · नई दिल्ली")
+
+    doc.add_heading("निविदा सूचना (NIT)", level=1)
+    p = doc.add_paragraph()
+    p.add_run("निविदा संख्या: CRPF/HI/2025-26/002\n").bold = True
+    p.add_run("दिनांक: 01 अप्रैल 2025\n")
+    p.add_run("विषय: सीआरपीएफ कर्मियों के लिए दंगा नियंत्रण उपकरण की आपूर्ति "
+              "(हेलमेट, बॉडी प्रोटेक्टर, शील्ड, बैटन)।")
+
+    doc.add_heading("पात्रता मानदंड", level=2)
+    doc.add_paragraph(
+        "बोलीदाता को निम्नलिखित सभी पात्रता मानदंड पूरे करने होंगे। "
+        "प्रत्येक मानदंड के लिए सहायक दस्तावेज तकनीकी बोली के साथ संलग्न करें।"
+    )
+
+    criteria = [
+        ("न्यूनतम वार्षिक टर्नओवर",
+         "पिछले 3 वित्तीय वर्षों में औसत वार्षिक टर्नओवर रुपये 8 करोड़ हो।",
+         "सीए प्रमाणपत्र / अंकेक्षित बैलेंस शीट"),
+        ("समान परियोजनाएँ",
+         "केंद्रीय/राज्य सरकार के संगठनों को कम से कम 3 समान आपूर्तियाँ पिछले 5 वर्षों में।",
+         "क्रय आदेश + पूर्णता प्रमाणपत्र"),
+        ("BIS प्रमाणन",
+         "सभी उत्पाद BIS IS 17051 / IS 17066 के अनुसार प्रमाणित होने चाहिए।",
+         "BIS प्रमाणपत्र की प्रति"),
+        ("GST पंजीकरण",
+         "वैध GST पंजीकरण प्रमाणपत्र होना अनिवार्य।",
+         "GST प्रमाणपत्र की प्रति"),
+        ("ISO 9001 प्रमाणपत्र",
+         "ISO 9001:2015 प्रमाणित निर्माता / आपूर्तिकर्ता।",
+         "ISO प्रमाणपत्र"),
+        ("मेक इन इंडिया",
+         "PPP-MII आदेश 2017 के अंतर्गत Class-I / Class-II स्थानीय आपूर्तिकर्ता पात्र।",
+         "स्थानीय सामग्री हेतु स्व-घोषणापत्र"),
+    ]
+    table = doc.add_table(rows=1 + len(criteria), cols=3)
+    table.style = "Table Grid"
+    h = table.rows[0].cells
+    h[0].text = "मानदंड"; h[1].text = "आवश्यकता"; h[2].text = "दस्तावेज"
+    for i, (k, req, docu) in enumerate(criteria, start=1):
+        r = table.rows[i].cells
+        r[0].text = k; r[1].text = req; r[2].text = docu
+
+    doc.add_heading("अतिरिक्त शर्तें", level=2)
+    doc.add_paragraph(
+        "• किसी भी केंद्रीय/राज्य सरकार के संगठन द्वारा फर्म ब्लैक-लिस्ट नहीं होनी चाहिए।\n"
+        "• बयाना राशि (EMD) रुपये 10 लाख जमा करनी होगी।\n"
+        "• न्यूनतम 5 वर्षों का अनुभव अनिवार्य।\n"
+        "• सभी दस्तावेज स्व-सत्यापित और notarised हों।"
+    )
+    doc.add_heading("English summary (for the AI extractor)", level=2)
+    doc.add_paragraph(
+        "Hindi NIT for supply of riot-control equipment to CRPF. "
+        "Mandatory eligibility: minimum turnover Rs. 8 crore (3-year average), "
+        "3 similar Government supply orders in last 5 years, BIS IS 17051 / IS 17066 "
+        "certification, valid GST registration, ISO 9001:2015, PPP-MII Class-I/II "
+        "Local Supplier. EMD Rs. 10 lakh."
+    )
+
+    doc.save(out)
+    print(f"  Created: {out}")
+    return out
+
+
 if __name__ == "__main__":
-    print("Generating realistic CRPF demo documents...")
+    print("Generating realistic CRPF + Karnataka demo documents...")
     for spec in TENDERS:
         generate_tender(spec)
     generate_bidder_1()
     generate_bidder_2()
     generate_bidder_3()
+    generate_hindi_tender_docx()
     print(f"\nAll documents saved to: {OUTPUT_DIR}")
     print("Done!")

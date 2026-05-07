@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "version": "1.0",
-    "description": "Hand-labelled ground-truth set for TenderAI's criterion extractor. Numbers reported with this set are honest baseline numbers — not synthetic.",
-    "tenders": 4,
-    "criteria_total": 23
+    "version": "1.1",
+    "description": "Hand-labelled ground-truth set for TenderAI's criterion extractor. Numbers reported with this set are honest baseline numbers — not synthetic. Covers Central (CRPF) and State (Karnataka State Police, KTPP Act 1999) procurement frameworks.",
+    "tenders": 5,
+    "criteria_total": 29,
+    "frameworks": ["CRPF / CAPF (GFR + CVC)", "Karnataka KTPP Act 1999"]
   },
   "tenders": [
     {
@@ -51,6 +52,19 @@
         { "criterion": "Similar Construction Experience","type":"technical","value_contains": ["2"],                "mandatory": true },
         { "criterion": "CPWD/PWD Empanelment",      "type": "compliance", "value_contains": ["cpwd", "pwd"],         "mandatory": true },
         { "criterion": "GST Registration",          "type": "compliance", "value_contains": ["gst"],                 "mandatory": true }
+      ]
+    },
+    {
+      "id": "KSP/IT/2025-26/007",
+      "filename": "KSP_IT_2025-26_007_State_Police_Network.pdf",
+      "framework": "KTPP Act 1999 · Karnataka State Police",
+      "criteria": [
+        { "criterion": "Minimum Annual Turnover",      "type": "financial",  "value_contains": ["10", "crore"],   "mandatory": true },
+        { "criterion": "Karnataka GST Registration",   "type": "compliance", "value_contains": ["gst"],            "mandatory": true },
+        { "criterion": "e-Procurement Empanelment",    "type": "compliance", "value_contains": ["eproc"],          "mandatory": true },
+        { "criterion": "Similar Projects",             "type": "technical",  "value_contains": ["2"],              "mandatory": true },
+        { "criterion": "MSME Preference",              "type": "compliance", "value_contains": ["msme"],           "mandatory": false },
+        { "criterion": "ISO 27001 Certification",      "type": "compliance", "value_contains": ["27001"],          "mandatory": true }
       ]
     }
   ]
